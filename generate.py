@@ -311,3 +311,39 @@ def answer_from_chunks(question: str, results, cache: bool = True) -> str:
     """
     prompt = build_prompt(question, results)
     return generate(prompt, system=GROUNDING_INSTRUCTION, cache=cache)
+
+
+# ─── Conversational memory ───────────────────────────────────────────────────
+
+REWRITE_INSTRUCTION = """You rewrite follow-up questions so they make sense on their own.
+
+Rules:
+- Replace words like "it", "that", "they" or "there" with what they refer to in the conversation.
+- Keep the user's meaning exactly. Do not add details or answer the question.
+- If the question already makes sense on its own, return it unchanged.
+- Return only the rewritten question, nothing else."""
+
+HISTORY_TURNS = 3   # how many earlier exchanges the rewrite gets to see
+
+
+def rewrite_question(history: list[tuple[str, str]], question: str) -> str:
+    """
+    Turn a follow-up into a standalone question, using the last few exchanges.
+
+    Retrieval only ever sees the question it's given. "Does it need a
+    signature?" finds nothing useful; "Does withdrawing from a course need a
+    signature?" finds the withdrawal post. This is the step that makes the
+    difference.
+    """
+    if not history:
+        return question
+
+    recent = history[-HISTORY_TURNS:]
+    conversation = "\n\n".join(f"User: {q}\nAssistant: {a}" for q, a in recent)
+    prompt = (
+        f"Conversation so far:\n\n{conversation}\n\n"
+        f"---\n\nFollow-up question: {question}\n\n"
+        f"Rewrite the follow-up so it makes sense on its own."
+    )
+    rewritten = generate(prompt, system=REWRITE_INSTRUCTION).strip()
+    return rewritten.splitlines()[0].strip() if rewritten else question

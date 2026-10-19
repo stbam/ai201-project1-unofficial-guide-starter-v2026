@@ -183,6 +183,7 @@ def ask_pipeline(
     threshold=None,
     on_gate=None,
     on_prompt=None,
+    history=None,
 ):
     """Retrieve, gate, answer. Returns the outcome and prints nothing.
 
@@ -198,10 +199,18 @@ def ask_pipeline(
     decision as soon as it's made, and `on_prompt` is handed the assembled
     prompt just before it goes out — that's how `--show-prompt` shows you the
     prompt while the model is still thinking rather than after.
+
+    `history` is the conversation so far, as (question, answer) pairs. When
+    there is one, a follow-up like "does it need a signature?" is rewritten
+    into a standalone question first, and everything after that uses the
+    rewrite. No history, no rewrite, no extra model call.
     """
     from store import search
     import gate
-    from generate import answer_from_chunks, build_prompt
+    from generate import answer_from_chunks, build_prompt, rewrite_question
+
+    original = question
+    question = rewrite_question(history or [], question)
 
     results = search(
         question,
@@ -215,6 +224,7 @@ def ask_pipeline(
 
     outcome = {
         "question": question,
+        "original_question": original,
         "refused": not decision.passed,
         "best_distance": decision.best_distance,
         "threshold": decision.threshold,
@@ -244,6 +254,7 @@ def _ask_one(
     threshold,
     show_distances=True,
     show_prompt=False,
+    history=None,
 ):
     import gate
     from generate import GROUNDING_INSTRUCTION
@@ -271,15 +282,19 @@ def _ask_one(
         threshold=threshold,
         on_gate=print_distances if show_distances else None,
         on_prompt=print_prompt if show_prompt else None,
+        history=history,
     )
+
+    if outcome["question"] != outcome["original_question"]:
+        print(f"  (searched as: {outcome['question']})")
 
     if outcome["refused"]:
         print(f"\n{gate.REFUSAL}\n")
-        return gate.REFUSAL
+        return outcome
 
     print(f"\n{outcome['answer']}\n")
     print(f"Sources retrieved: {', '.join(outcome['sources'])}\n")
-    return outcome["answer"]
+    return outcome
 
 
 def cmd_ask(args):
@@ -297,7 +312,9 @@ def cmd_ask(args):
                 show_prompt=args.show_prompt,
             )
         else:
-            print("Ask a question, or press Enter on an empty line to quit.\n")
+            print("Ask a question, or press Enter on an empty line to quit.")
+            print("Follow-ups remember the conversation.\n")
+            history = []   # (question, answer) pairs, oldest first
             while True:
                 try:
                     question = input("> ").strip()
@@ -306,14 +323,18 @@ def cmd_ask(args):
                     break
                 if not question:
                     break
-                _ask_one(
+                outcome = _ask_one(
                     question,
                     corpus,
                     args.variant,
                     args.top_k,
                     args.threshold,
                     show_prompt=args.show_prompt,
+                    history=history,
                 )
+                # Store the rewritten question, so the next follow-up's
+                # rewrite sees "withdrawing from a course", not "it".
+                history.append((outcome["question"], outcome["answer"]))
     finally:
         print(gen.usage())
 

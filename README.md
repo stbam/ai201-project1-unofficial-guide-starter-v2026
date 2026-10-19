@@ -100,6 +100,11 @@ The good: cheapest housing tier by about $900 a year, and the singles are real s
 <!-- One complete question and answer, pasted as text, with the source line
      visible. Milestone 4. -->
 
+     How long does a library hold take, and can I renew it online?:
+     A hold on a checked-out book usually arrives in two to three days (*admin_library_holds.txt*). The provided documents do not contain information about whether you can renew a hold online.
+
+     Sources retrieved: admin_library_holds.txt, course_cs_210_workload.txt, course_cs_340_workload.txt, money_textbooks.txt, study_library_hours.txt
+
 Question: How long does an interlibrary book request usually take?
 Answer:
 1 0.2038 admin_library_holds.txt On the library holds You can place a hold on a chec...
@@ -146,7 +151,6 @@ How do I change the oil in a diesel engine? No 0.923
      Milestone 5. -->
 
      I used ai to guide me through the codebase and provide me context on how RAG works. I also asked it to provide implementation code for split_document function after providing it the context for how i wanted it to split documents.
-
 
 **1.**
 

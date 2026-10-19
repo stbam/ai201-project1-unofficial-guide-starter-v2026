@@ -78,6 +78,7 @@ PAGE = """<!doctype html>
 const f = document.getElementById('f'), q = document.getElementById('q'),
       b = document.getElementById('b'), log = document.getElementById('log');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const history = [];   // [question, answer] pairs, sent with every request
 
 f.addEventListener('submit', async e => {
   e.preventDefault();
@@ -90,16 +91,18 @@ f.addEventListener('submit', async e => {
   log.prepend(card);
   try {
     const r = await fetch('/ui/ask', {method: 'POST',
-      headers: {'Content-Type': 'application/json'}, body: JSON.stringify({question})});
+      headers: {'Content-Type': 'application/json'}, body: JSON.stringify({question, history})});
     const d = await r.json();
     if (d.error) throw new Error(d.error);
+    history.push([d.searched_as, d.answer]);
+    const rewrite = d.searched_as !== question ? `<br>Searched as: ${esc(d.searched_as)}` : '';
     const badge = d.refused ? '<span class="badge refused">refused by gate</span>'
                             : '<span class="badge pass">answered</span>';
     const chunks = d.chunks.map(c =>
       `<div class="chunk"><b>${esc(c.label)}</b> — distance ${c.distance.toFixed(3)}<p>${esc(c.text)}</p></div>`).join('');
     card.innerHTML = `<div class="q">${esc(question)}</div>
       <div class="answer">${esc(d.answer)}</div>
-      <div class="meta">${badge}best distance ${d.best_distance} (cutoff ${d.threshold})
+      <div class="meta">${badge}best distance ${d.best_distance} (cutoff ${d.threshold})${rewrite}
         ${d.sources.length ? '<br>Sources: ' + d.sources.map(esc).join(', ') : ''}</div>
       <details><summary>Retrieved chunks (${d.chunks.length})</summary>${chunks}</details>`;
   } catch (err) {
@@ -127,21 +130,27 @@ def ui_ask():
     from app import ask_pipeline
     from store import search
 
-    question = ((request.get_json(silent=True) or {}).get("question") or "").strip()
+    payload = request.get_json(silent=True) or {}
+    question = (payload.get("question") or "").strip()
+    # The page keeps the conversation and sends it back each time, so the
+    # server remembers nothing between requests.
+    history = [tuple(turn) for turn in payload.get("history", [])]
     if not question:
         return jsonify({"error": "Type a question first."}), 400
 
     try:
+        outcome = ask_pipeline(question, corpus=config.CORPUS, history=history)
         # ask_pipeline searches too; this second search is local and cheap,
         # and it's the only way to show the chunks without changing app.py.
-        chunks = search(question, corpus=config.CORPUS)
-        outcome = ask_pipeline(question, corpus=config.CORPUS)
+        # It uses the rewritten question so it shows what was really searched.
+        chunks = search(outcome["question"], corpus=config.CORPUS)
     except Exception as exc:  # noqa: BLE001
         return jsonify({"error": f"{type(exc).__name__}: {exc}"}), 500
 
     return jsonify(
         {
             "answer": outcome["answer"],
+            "searched_as": outcome["question"],
             "refused": outcome["refused"],
             "sources": outcome["sources"],
             "best_distance": round(outcome["best_distance"], 4),
