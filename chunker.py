@@ -26,6 +26,10 @@ from dataclasses import dataclass
 
 import config
 from ingest import Document
+import re
+_PARAGRAPH_BREAK = re.compile(r"\n\s*\n")   # one or more blank lines
+_TITLE_MAX = 80                             # longer than this is a sentence, not a title
+
 
 
 @dataclass
@@ -96,8 +100,40 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
       - Is the useful information in one sentence, or spread over a paragraph?
       - Would splitting on paragraph breaks keep more thoughts intact than
         splitting on a character count?
+
+        short Posts that should split on paragraph breaks. Useful information is in one sentence.
     """
-    return fallback_split(documents)
+    size = config.CHUNK_SIZE
+    step = size - config.CHUNK_OVERLAP
+
+    chunks: list[Chunk] = []
+    for doc in documents:
+        paragraphs = [p.strip() for p in _PARAGRAPH_BREAK.split(doc.text)]
+        paragraphs = [p for p in paragraphs if p]
+
+        # A short single line at the top is a title, not content.
+        title = ""
+        if len(paragraphs) > 1 and "\n" not in paragraphs[0] and len(paragraphs[0]) <= _TITLE_MAX:
+            title = paragraphs.pop(0)
+
+        index = 0
+        for para in paragraphs:
+            pieces = [para] if len(para) <= size else [
+                para[start : start + size].strip() for start in range(0, len(para), step)
+            ]
+            for piece in pieces:
+                chunks.append(
+                    Chunk(
+                        text=f"{title}\n\n{piece}" if title else piece,
+                        source=doc.source,
+                        index=index,
+                        produced_by="chunker.py::split_documents",
+                    )
+                )
+                index += 1
+
+    return chunks
+    #return fallback_split(documents)
 
 
 def describe(chunks: list[Chunk]) -> str:

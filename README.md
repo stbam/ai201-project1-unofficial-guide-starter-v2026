@@ -1,6 +1,6 @@
 # The Unofficial Guide
 
-<!-- Replace this line with your name and which corpus you picked. -->
+Stanislav Rushnitski I picked campus_life corpus
 
 > **This file is your submission.** Fill it in as you go — most sections get
 > written during the milestone that produces them, not at the end.
@@ -26,6 +26,8 @@
      this repo.
 
      Milestone 5. -->
+
+I picked campus_life because its relevant to my student life. The questions it focuses on answering is anything related to classes or scheduling or locations. Currently it does it by ingesting all 88 chunks of relevant .txt files.
 
 ## Chunking Strategy
 
@@ -53,29 +55,44 @@
 
      Milestone 3. -->
 
-**Chunk 1** — source: `` — produced by: ``
+**Chunk 1** — source: `admin_add_drop_deadline.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+On the add/drop deadline
+
+You can add a course through the end of the second week. Dropping is a longer window — through the end of week six — but a drop after week two shows as a W on your transcript. Nothing anywhere on the registrar's site says this plainly, and students find out from each other.
 ```
 
-**Chunk 2** — source: `` — produced by: ``
+**Chunk 2** — source: `course_cs_340_exams.txt#1` — produced by: `chunker.py::split_documents`
 
 ```
+CS 340 Databases — assessment
+
+Start the term project in week three, not week eight; everyone learns this the hard way.
 ```
 
-**Chunk 3** — source: `` — produced by: ``
+**Chunk 3** — source: `course_phys_130_workload.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+Workload for PHYS 130 Mechanics
+
+People keep asking so: 7 hours a week, plus 3 on lab weeks. That's real time, not optimistic time.
 ```
 
-**Chunk 4** — source: `` — produced by: ``
+**Chunk 4** — source: `dining_verrill_street_grill_followup.txt#1` — produced by: `chunker.py::split_documents`
 
 ```
+Re: Verrill Street Grill
+
+Also worth saying: one register, so the queue is a single line no matter how busy. Nobody tells you this at orientation.
 ```
 
-**Chunk 5** — source: `` — produced by: ``
+**Chunk 5** — source: `housing_morrow_house.txt#1` — produced by: `chunker.py::split_documents`
 
 ```
+Morrow House — what it's actually like
+
+The good: cheapest housing tier by about $900 a year, and the singles are real singles.
 ```
 
 ## Sample Answer
@@ -83,12 +100,13 @@
 <!-- One complete question and answer, pasted as text, with the source line
      visible. Milestone 4. -->
 
-**Question:**
-
-**Answer:**
-
-```
-```
+Question: How long does an interlibrary book request usually take?
+Answer:
+1 0.2038 admin_library_holds.txt On the library holds You can place a hold on a chec...
+2 0.5341 course_engl_205_workload.txt Workload for ENGL 205 Writing for the Sciences Peop...
+3 0.5373 money_textbooks.txt Textbooks without paying full price The library hol...
+4 0.5790 course_engl_205.txt ENGL 205 Writing for the Sciences Expect 4 to 5 hou...
+5 0.5838 course_hist_118_workload.txt Workload for HIST 118 Modern World History People k...
 
 **My relevance cutoff:**
 
@@ -101,9 +119,20 @@
 
      Milestone 4. -->
 
-| Question | In corpus? | Best distance |
-|---|---|---|
-|  |  |  |
+I kept .6 since for my questions that were relevant the distance remained under .45 while questions that were not relevant
+would have a distance of .79. So a saferange was anywhere above .45 and below .79 and right now .6 provides enough distance to not let unrelevant questions pass and relevant questions to go silent. Below is the questions i ran and tested.
+
+Question In corpus? Best distance
+How late can I add a course, and when does dropping it show as a W? Yes 0.183
+How long does an interlibrary book request usually take? Yes 0.204
+How are CS 210 exams structured, and what are they based on? Yes 0.326
+What should I know about parking permits for the west lots? Yes 0.348
+How long does my student account stay active after graduation? Yes 0.354
+What is the capital of Mongolia? No 0.787
+Who won the 1994 World Cup? No 0.847
+What is the recommended dosage of ibuprofen for a headache? No 0.849
+How do I write a for loop in Rust? No 0.860
+How do I change the oil in a diesel engine? No 0.923
 
 ## How I Used AI
 
@@ -115,6 +144,9 @@
      "I used AI to help me code" is not.
 
      Milestone 5. -->
+
+     I used ai to guide me through the codebase and provide me context on how RAG works. I also asked it to provide implementation code for split_document function after providing it the context for how i wanted it to split documents.
+
 
 **1.**
 
@@ -145,13 +177,13 @@
 
      Milestone 1. -->
 
-| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
-|---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| Criterion                              | Target | Run 1 | Run 2 | Run 3 | Verdict |
+| -------------------------------------- | ------ | ----- | ----- | ----- | ------- |
+| 1. Retrieved chunk contains the answer | 4 of 5 |       |       |       |         |
+| 2. Every answer names a source         | 5 of 5 |       |       |       |         |
+| 3. Gate stops out-of-corpus questions  | 4 of 5 |       |       |       |         |
+| 4.                                     |        |       |       |       |         |
+| 5.                                     |        |       |       |       |         |
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
@@ -168,13 +200,13 @@
 
      Milestone 2. -->
 
-| # | Criterion | Verdict | How I decided |
-|---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| #   | Criterion | Verdict | How I decided |
+| --- | --------- | ------- | ------------- |
+| 1   |           |         |               |
+| 2   |           |         |               |
+| 3   |           |         |               |
+| 4   |           |         |               |
+| 5   |           |         |               |
 
 ## Diagnoses
 
@@ -210,13 +242,13 @@
 <!-- Same format, same five criteria, three runs each.
      `python run_eval.py --label after` -->
 
-| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
-|---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| Criterion                              | Target | Run 1 | Run 2 | Run 3 | Verdict |
+| -------------------------------------- | ------ | ----- | ----- | ----- | ------- |
+| 1. Retrieved chunk contains the answer | 4 of 5 |       |       |       |         |
+| 2. Every answer names a source         | 5 of 5 |       |       |       |         |
+| 3. Gate stops out-of-corpus questions  | 4 of 5 |       |       |       |         |
+| 4.                                     |        |       |       |       |         |
+| 5.                                     |        |       |       |       |         |
 
 **Did it help?**
 
